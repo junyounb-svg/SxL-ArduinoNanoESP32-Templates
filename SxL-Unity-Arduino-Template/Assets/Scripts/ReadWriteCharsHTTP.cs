@@ -1,6 +1,7 @@
 using System.Collections;
+using System.Net.Http;
+using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class ReadWriteCharsHTTP : MonoBehaviour
 {
@@ -16,10 +17,17 @@ public class ReadWriteCharsHTTP : MonoBehaviour
     
     private string arduinoURL;
     private char receivedChar = ' ';
+    private HttpClient httpClient;
     
     void Start() {
         arduinoURL = "http://" + arduinoIP + ":" + arduinoPort;
+        httpClient = new HttpClient();
+        httpClient.Timeout = System.TimeSpan.FromSeconds(5);
         StartCoroutine(PollArduinoData());
+    }
+    
+    void OnDestroy() {
+        httpClient?.Dispose();
     }
     
     void Update() {
@@ -42,36 +50,52 @@ public class ReadWriteCharsHTTP : MonoBehaviour
     // Poll Arduino for data (GET /data)
     IEnumerator PollArduinoData() {
         while (true) {
-            using (UnityWebRequest request = UnityWebRequest.Get(arduinoURL + "/data")) {
-                yield return request.SendWebRequest();
-                
-                if (request.result == UnityWebRequest.Result.Success) {
-                    string response = request.downloadHandler.text.Trim();
-                    if (response.Length > 0) {
-                        receivedChar = response[0];
-                        Debug.Log("Received from Arduino: " + receivedChar);
-                    }
-                } else {
-                    Debug.LogWarning("Failed to get data from Arduino: " + request.error);
+            Task<string> task = GetArduinoDataAsync();
+            yield return new WaitUntil(() => task.IsCompleted);
+            
+            if (!task.IsFaulted && task.Result != null) {
+                string response = task.Result.Trim();
+                if (response.Length > 0) {
+                    receivedChar = response[0];
+                    Debug.Log("Received from Arduino: " + receivedChar);
                 }
+            } else if (task.IsFaulted) {
+                Debug.LogWarning("Failed to get data: " + task.Exception?.Message);
             }
             
             yield return new WaitForSeconds(pollInterval);
         }
     }
     
-    // Send command to Arduino (GET /command - using GET to avoid HTTP/HTTPS issues)
+    async Task<string> GetArduinoDataAsync() {
+        try {
+            return await httpClient.GetStringAsync(arduinoURL + "/data");
+        } catch (System.Exception e) {
+            Debug.LogWarning("HTTP GET error: " + e.Message);
+            return null;
+        }
+    }
+    
+    // Send command to Arduino (GET /command)
     IEnumerator SendCommand(char cmd) {
         string url = arduinoURL + "/command?cmd=" + cmd;
         
-        using (UnityWebRequest request = UnityWebRequest.Get(url)) {
-            yield return request.SendWebRequest();
-            
-            if (request.result == UnityWebRequest.Result.Success) {
-                Debug.Log("Sent command to Arduino: " + cmd + " - Response: " + request.downloadHandler.text);
-            } else {
-                Debug.LogError("Failed to send command: " + request.error);
-            }
+        Task<string> task = SendCommandAsync(url);
+        yield return new WaitUntil(() => task.IsCompleted);
+        
+        if (!task.IsFaulted && task.Result != null) {
+            Debug.Log("Sent command: " + cmd + " - Response: " + task.Result);
+        } else if (task.IsFaulted) {
+            Debug.LogError("Failed to send command: " + task.Exception?.Message);
+        }
+    }
+    
+    async Task<string> SendCommandAsync(string url) {
+        try {
+            return await httpClient.GetStringAsync(url);
+        } catch (System.Exception e) {
+            Debug.LogError("HTTP command error: " + e.Message);
+            return null;
         }
     }
 }
