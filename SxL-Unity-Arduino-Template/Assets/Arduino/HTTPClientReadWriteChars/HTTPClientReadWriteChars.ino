@@ -2,8 +2,8 @@
 #include <HTTPClient.h>
 
 // WiFi credentials
-const char *ssid = "TP-Link_5E30";
-const char *password = "18506839";
+const char *ssid = "YOUR_WIFI_SSID"; //"TP-Link_5E30";
+const char *password = "YOUR_WIFI_PASSWORD"; //"18506839";
 
 // Unity HTTP Server settings
 const char *unityIP = "192.168.0.102";  // Unity PC's IP address
