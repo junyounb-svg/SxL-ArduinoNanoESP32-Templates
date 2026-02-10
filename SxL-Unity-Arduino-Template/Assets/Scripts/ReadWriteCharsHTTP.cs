@@ -43,7 +43,6 @@ public class ReadWriteCharsHTTP : MonoBehaviour
     IEnumerator PollArduinoData() {
         while (true) {
             using (UnityWebRequest request = UnityWebRequest.Get(arduinoURL + "/data")) {
-                request.certificateHandler = new AcceptAllCertificates();
                 yield return request.SendWebRequest();
                 
                 if (request.result == UnityWebRequest.Result.Success) {
@@ -61,18 +60,11 @@ public class ReadWriteCharsHTTP : MonoBehaviour
         }
     }
     
-    // Certificate handler to allow HTTP connections
-    private class AcceptAllCertificates : CertificateHandler {
-        protected override bool ValidateCertificate(byte[] certificateData) {
-            return true;
-        }
-    }
-    
-    // Send command to Arduino (POST /command)
+    // Send command to Arduino (GET /command - using GET to avoid HTTP/HTTPS issues)
     IEnumerator SendCommand(char cmd) {
         string url = arduinoURL + "/command?cmd=" + cmd;
         
-        using (UnityWebRequest request = UnityWebRequest.PostWwwForm(url, "")) {
+        using (UnityWebRequest request = UnityWebRequest.Get(url)) {
             yield return request.SendWebRequest();
             
             if (request.result == UnityWebRequest.Result.Success) {

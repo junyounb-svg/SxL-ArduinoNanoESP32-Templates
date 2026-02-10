@@ -36,7 +36,7 @@ void setup() {
   // Setup HTTP server routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/data", HTTP_GET, handleData);
-  server.on("/command", HTTP_POST, handleCommand);
+  server.on("/command", HTTP_GET, handleCommand);  // Changed to GET for Unity compatibility
   server.onNotFound(handleNotFound);
   
   server.begin();
@@ -63,8 +63,8 @@ void loop() {
 void handleRoot() {
   String html = "<h1>Arduino HTTP Server</h1>";
   html += "<p>GET /data - Get current character (a or b)</p>";
-  html += "<p>POST /command?cmd=c - Turn LED ON</p>";
-  html += "<p>POST /command?cmd=d - Turn LED OFF</p>";
+  html += "<p>GET /command?cmd=c - Turn LED ON</p>";
+  html += "<p>GET /command?cmd=d - Turn LED OFF</p>";
   server.send(200, "text/html", html);
 }
 
