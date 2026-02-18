@@ -90,6 +90,7 @@ public class HTTPServer
             }
         }
         
+        context.Response.AddHeader("Access-Control-Allow-Origin", "*");
         byte[] buffer = Encoding.UTF8.GetBytes(response);
         context.Response.StatusCode = statusCode;
         context.Response.ContentLength64 = buffer.Length;

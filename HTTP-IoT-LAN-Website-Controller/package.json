@@ -1,0 +1,11 @@
+{
+  "name": "http-iot-lan-website-controller",
+  "version": "1.0.0",
+  "description": "HTTP IoT LAN Website Controller",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["iot", "http", "lan"],
+  "license": "ISC"
+}

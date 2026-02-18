@@ -6,8 +6,8 @@
 //Sample board supplier: https://www.amazon.com/HiLetgo-ESP-WROOM-32-Development-Microcontroller-Integrated/dp/B0718T232Z
 
 // Replace with your network credentials
-const char *ssid = "WIFI NETWORK NAME";//"TP-Link_5E30";
-const char *password = "WIFI NETWORK PASSWORD";//"18506839";
+const char *ssid = "TP-Link_3428";//"TP-Link_5E30";
+const char *password = "40136998";//"18506839";
 
 // Set up UDP
 WiFiUDP udp;
