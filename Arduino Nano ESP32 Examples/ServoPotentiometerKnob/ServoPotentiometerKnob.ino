@@ -1,4 +1,4 @@
-#include <Servo.h>
+#include <ESP32Servo.h>
 
 Servo myservo;  // create Servo object to control a servo
 

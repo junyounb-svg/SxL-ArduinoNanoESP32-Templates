@@ -76,6 +76,16 @@ public class HTTPServer
         
         Debug.Log($"[HTTP Server] {method} {path} from {clientIP}");
         
+        // CORS preflight
+        context.Response.AddHeader("Access-Control-Allow-Origin", "*");
+        context.Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        context.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
+        if (method == "OPTIONS") {
+            context.Response.StatusCode = 200;
+            context.Response.OutputStream.Close();
+            return;
+        }
+        
         string response = "Not Found";
         int statusCode = 404;
         

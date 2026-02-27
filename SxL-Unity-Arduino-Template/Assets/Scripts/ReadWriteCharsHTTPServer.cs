@@ -8,7 +8,7 @@ using UnityEngine;
 public class ReadWriteCharsHTTPServer : MonoBehaviour
 {
     [Header("Server Settings")]
-    public int serverPort = 8080;
+    public int serverPort = 4000;
     
     [Header("Unity Objects")]
     public GameObject cube;
@@ -71,7 +71,8 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
         return "<h1>Unity HTTP Server</h1>" +
                "<p>GET /data - Get current character (a or b)</p>" +
                "<p>GET /command?cmd=c - Change cube to RED</p>" +
-               "<p>GET /command?cmd=d - Change cube to BLUE</p>";
+               "<p>GET /command?cmd=d - Change cube to BLUE</p>" +
+               "<p>GET /command?r=122&g=162&b=247 - Set cube color (0-255 RGB)</p>";
     }
     
     // Data endpoint - Arduino polls this
@@ -80,28 +81,45 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
         return currentChar.ToString();
     }
     
-    // Command endpoint - Arduino sends commands
+    // Command endpoint - Arduino or web sends commands
+    // Supports: /command?cmd=c|d  OR  /command?r=255&g=0&b=0 (0-255)
     string HandleCommand(HttpListenerContext context) {
         string cmd = context.Request.QueryString["cmd"];
+        string rStr = context.Request.QueryString["r"];
+        string gStr = context.Request.QueryString["g"];
+        string bStr = context.Request.QueryString["b"];
         
+        // RGB from web button (or any client)
+        if (!string.IsNullOrEmpty(rStr) && !string.IsNullOrEmpty(gStr) && !string.IsNullOrEmpty(bStr)) {
+            if (int.TryParse(rStr, out int r) && int.TryParse(gStr, out int g) && int.TryParse(bStr, out int b)) {
+                r = Mathf.Clamp(r, 0, 255);
+                g = Mathf.Clamp(g, 0, 255);
+                b = Mathf.Clamp(b, 0, 255);
+                Color color = new Color(r / 255f, g / 255f, b / 255f);
+                lock (queueLock) {
+                    colorQueue.Enqueue(color);
+                }
+                Debug.Log($"[Server] Command: RGB({r},{g},{b}) - Queued color");
+                return $"Cube set to RGB({r},{g},{b})";
+            }
+        }
+        
+        // Legacy: single-char commands
         if (cmd == "c") {
-            // Queue color change for main thread (can't modify GameObject from background thread!)
             lock (queueLock) {
                 colorQueue.Enqueue(Color.red);
             }
             Debug.Log("[Server] Command: c - Queued RED color");
             return "Cube set to RED";
-        } 
-        else if (cmd == "d") {
-            // Queue color change for main thread
+        }
+        if (cmd == "d") {
             lock (queueLock) {
                 colorQueue.Enqueue(Color.blue);
             }
             Debug.Log("[Server] Command: d - Queued BLUE color");
             return "Cube set to BLUE";
         }
-        else {
-            return "Invalid command";
-        }
+        
+        return "Invalid command (use cmd=c|d or r,g,b query params)";
     }
 }
