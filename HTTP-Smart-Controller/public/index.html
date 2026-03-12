@@ -2,279 +2,209 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Button Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Driving Controller</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            padding: 16px;
+            padding-bottom: env(safe-area-inset-bottom);
         }
-
-        .container {
-            text-align: center;
-            background: white;
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 90%;
-        }
-
         h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
+            text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #e94560;
         }
-
-        .button-container {
-            margin: 40px 0;
-        }
-
-        #colorButton {
-            padding: 30px 60px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #colorButton:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        #colorButton:active {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .info {
-            margin-top: 30px;
-            font-size: 1.2em;
-            color: #666;
-        }
-
-        .click-count {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-            margin: 20px 0;
-        }
-
-        .color-display {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            color: #333;
-        }
-
-        .unity-status {
-            margin-top: 20px;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: bold;
-        }
-
-        .unity-connected {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #c3e6cb;
-        }
-
-        .unity-disconnected {
-            background: #f8d7da;
-            color: #721c24;
-            border: 2px solid #f5c6cb;
-        }
-
-        .settings {
-            margin-top: 30px;
+        .section {
+            background: rgba(255,255,255,0.06);
+            border-radius: 16px;
             padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            margin-bottom: 16px;
         }
-
-        .settings h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.2em;
+        .section h2 {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 12px;
+            text-transform: uppercase;
         }
-
+        .steer-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .steer-label { min-width: 50px; text-align: center; font-weight: bold; }
+        input[type="range"] {
+            flex: 1;
+            height: 44px;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(233,69,96,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+        }
+        .pedals {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        .pedal {
+            flex: 1;
+            max-width: 160px;
+            height: 120px;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .pedal:active { transform: scale(0.96); }
+        #gasBtn {
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            box-shadow: 0 6px 0 #1e8449;
+        }
+        #gasBtn:active { box-shadow: 0 2px 0 #1e8449; }
+        #brakeBtn {
+            background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            box-shadow: 0 6px 0 #922b21;
+        }
+        #brakeBtn:active { box-shadow: 0 2px 0 #922b21; }
         .settings input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 1em;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #222;
+            color: #eee;
+            font-size: 1rem;
         }
-
         .settings button {
-            padding: 10px 20px;
-            background: #667eea;
+            width: 100%;
+            padding: 12px;
+            background: #e94560;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 1rem;
             cursor: pointer;
-            font-size: 1em;
-            transition: background 0.3s;
         }
-
-        .settings button:hover {
-            background: #5568d3;
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
         }
+        .status.ok { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .status.err { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Smart Button Controller</h1>
-        
-        <div class="button-container">
-            <button id="colorButton">Click Me!</button>
-        </div>
+    <h1>Driving Controller</h1>
 
-        <div class="click-count">
-            Clicks: <span id="clickCount">0</span>
-        </div>
-
-        <div class="color-display">
-            Current Color: <span id="currentColor">#3498db</span>
-        </div>
-
-        <div id="unityStatus" class="unity-status unity-disconnected">
-            Unity: Disconnected
-        </div>
-
-        <div class="info">
-            Click the button to change its color and send to Unity!
-        </div>
-
-        <div class="settings">
-            <h3>Unity Server Settings</h3>
-            <input type="text" id="unityHost" placeholder="Unity Host (e.g., localhost or 192.168.1.100)" value="localhost">
-            <input type="number" id="unityPort" placeholder="Unity Port (e.g., 4000)" value="4000">
-            <button onclick="updateUnitySettings()">Update Settings</button>
+    <div class="section">
+        <h2>Steering</h2>
+        <div class="steer-row">
+            <span class="steer-label">L</span>
+            <input type="range" id="steerSlider" min="-1" max="1" step="0.05" value="0">
+            <span class="steer-label">R</span>
         </div>
     </div>
 
+    <div class="section">
+        <h2>Gas & Brake</h2>
+        <div class="pedals">
+            <button type="button" id="gasBtn" class="pedal">GAS</button>
+            <button type="button" id="brakeBtn" class="pedal">BRAKE</button>
+        </div>
+    </div>
+
+    <div class="section settings">
+        <h2>Unity Server</h2>
+        <input type="text" id="unityHost" placeholder="e.g. 192.168.1.105 or localhost">
+        <input type="number" id="unityPort" placeholder="4000" value="4000">
+        <button type="button" onclick="saveSettings()">Save</button>
+        <div id="status" class="status"></div>
+    </div>
+
     <script>
-        const colors = [
-            '#3498db',
-            '#e74c3c',
-            '#2ecc71',
-            '#f39c12',
-            '#9b59b6',
-            '#1abc9c',
-            '#e67e22',
-            '#34495e',
-            '#16a085',
-            '#c0392b'
-        ];
+        const UNITY_HOST_KEY = 'unityHost';
+        const PORT_KEY = 'unityPort';
 
-        let currentColorIndex = 0;
-        let clickCount = 0;
+        let unityHost = localStorage.getItem(UNITY_HOST_KEY) || window.location.hostname || 'localhost';
+        let unityPort = parseInt(localStorage.getItem(PORT_KEY) || '4000', 10);
 
-        const button = document.getElementById('colorButton');
-        const clickCountDisplay = document.getElementById('clickCount');
-        const currentColorDisplay = document.getElementById('currentColor');
-        const unityStatusDisplay = document.getElementById('unityStatus');
+        document.getElementById('unityHost').value = unityHost;
+        document.getElementById('unityPort').value = unityPort;
 
-        let unityHost = 'localhost';
-        let unityPort = 4000;
-
-        async function checkUnityStatus() {
-            try {
-                const response = await fetch('/api/unity/status');
-                const data = await response.json();
-                updateUnityStatusDisplay(data.connected);
-            } catch (error) {
-                console.error('Error checking Unity status:', error);
-                updateUnityStatusDisplay(false);
-            }
+        function saveSettings() {
+            unityHost = document.getElementById('unityHost').value.trim() || 'localhost';
+            unityPort = parseInt(document.getElementById('unityPort').value || '4000', 10);
+            localStorage.setItem(UNITY_HOST_KEY, unityHost);
+            localStorage.setItem(PORT_KEY, String(unityPort));
+            showStatus('Settings saved. Unity: ' + unityHost + ':' + unityPort, true);
         }
 
-        function updateUnityStatusDisplay(connected) {
-            if (connected) {
-                unityStatusDisplay.textContent = `Unity: Connected (${unityHost}:${unityPort})`;
-                unityStatusDisplay.className = 'unity-status unity-connected';
-            } else {
-                unityStatusDisplay.textContent = `Unity: Disconnected`;
-                unityStatusDisplay.className = 'unity-status unity-disconnected';
-            }
+        function showStatus(msg, ok) {
+            var el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status ' + (ok ? 'ok' : 'err');
         }
 
-        function updateUnitySettings() {
-            const hostInput = document.getElementById('unityHost');
-            const portInput = document.getElementById('unityPort');
-            unityHost = hostInput.value || 'localhost';
-            unityPort = portInput.value || 4000;
-            console.log(`Unity settings updated: ${unityHost}:${unityPort}`);
-            alert(`Unity settings updated to ${unityHost}:${unityPort}\nNote: You may need to restart the Node.js server for changes to take effect.`);
+        var currentSpeed = 0;
+        var currentSteer = 0;
+
+        function sendToUnity() {
+            var url = 'http://' + unityHost + ':' + unityPort + '/?speed=' + currentSpeed + '&steer=' + currentSteer;
+            fetch(url, { method: 'GET', mode: 'cors' })
+                .then(function(res) { return res.text(); })
+                .then(function() { showStatus('OK', true); })
+                .catch(function() { showStatus('Unity not reachable', false); });
         }
 
-        async function loadState() {
-            try {
-                const response = await fetch('/api/state');
-                const state = await response.json();
-                clickCount = state.clickCount;
-                clickCountDisplay.textContent = clickCount;
-                currentColorDisplay.textContent = state.color;
-                button.style.backgroundColor = state.color;
-                currentColorIndex = colors.indexOf(state.color);
-                if (currentColorIndex === -1) currentColorIndex = 0;
-            } catch (error) {
-                console.error('Error loading state:', error);
-            }
-        }
-
-        button.addEventListener('click', async () => {
-            currentColorIndex = (currentColorIndex + 1) % colors.length;
-            const newColor = colors[currentColorIndex];
-            
-            button.style.backgroundColor = newColor;
-            currentColorDisplay.textContent = newColor;
-            
-            try {
-                const response = await fetch('/api/click', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ color: newColor })
-                });
-                
-                const state = await response.json();
-                clickCount = state.clickCount;
-                clickCountDisplay.textContent = clickCount;
-                
-                checkUnityStatus();
-            } catch (error) {
-                console.error('Error updating state:', error);
-            }
+        document.getElementById('steerSlider').addEventListener('input', function() {
+            currentSteer = parseFloat(this.value);
+            sendToUnity();
         });
 
-        loadState();
-        checkUnityStatus();
-        setInterval(checkUnityStatus, 3000);
+        var gasBtn = document.getElementById('gasBtn');
+        var brakeBtn = document.getElementById('brakeBtn');
+        gasBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = 1; sendToUnity(); });
+        gasBtn.addEventListener('touchend', function(e) { e.preventDefault(); currentSpeed = 0; sendToUnity(); });
+        gasBtn.addEventListener('mousedown', function() { currentSpeed = 1; sendToUnity(); });
+        gasBtn.addEventListener('mouseup', function() { currentSpeed = 0; sendToUnity(); });
+        gasBtn.addEventListener('mouseleave', function() { currentSpeed = 0; sendToUnity(); });
+
+        brakeBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = -1; sendToUnity(); });
+        brakeBtn.addEventListener('touchend', function(e) { e.preventDefault(); currentSpeed = 0; sendToUnity(); });
+        brakeBtn.addEventListener('mousedown', function() { currentSpeed = -1; sendToUnity(); });
+        brakeBtn.addEventListener('mouseup', function() { currentSpeed = 0; sendToUnity(); });
+        brakeBtn.addEventListener('mouseleave', function() { currentSpeed = 0; sendToUnity(); });
+
+        setInterval(sendToUnity, 100);
     </script>
 </body>
 </html>
