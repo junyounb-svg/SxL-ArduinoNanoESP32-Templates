@@ -12,11 +12,25 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
     
     [Header("Unity Objects")]
     public GameObject cube;
-    
+
+    [Header("Movement")]
+    public float moveSpeed = 5f;
+
     [Header("LED Control")]
+<<<<<<< HEAD:Fast&FuriousUnity/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     private int _ledPin = 4;
     
     private HttpServerHelper server;
+=======
+    private int ledPin = 4;
+
+    // Joystick input from website (thread-safe)
+    private float joyX = 0f;
+    private float joyY = 0f;
+    private readonly object joyLock = new object();
+
+    private HTTPServer server;
+>>>>>>> 6b9df45eebffc2c5b2269db8116810ff76936781:SxL-Unity-Arduino-Template/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     private char currentChar = 'a';
     private int charsSent = 0;
     private int sendTimer = 0;
@@ -49,6 +63,17 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
             charsSent += 1;
             currentChar = (charsSent % 2 == 0) ? 'a' : 'b';
         }
+
+        // Move cube from joystick (X = horizontal, Y = forward/back in world Z)
+        float x = 0f, y = 0f;
+        lock (joyLock) {
+            x = joyX;
+            y = joyY;
+        }
+        if (cube != null && (x != 0f || y != 0f)) {
+            Vector3 move = new Vector3(x, 0f, y) * (moveSpeed * Time.deltaTime);
+            cube.transform.position += move;
+        }
         
         // Process queued color changes on main thread
         lock (queueLock) {
@@ -72,7 +97,12 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
                "<p>GET /data - Get current character (a or b)</p>" +
                "<p>GET /command?cmd=c - Change cube to RED</p>" +
                "<p>GET /command?cmd=d - Change cube to BLUE</p>" +
+<<<<<<< HEAD:Fast&FuriousUnity/Assets/Scripts/ReadWriteCharsHTTPServer.cs
                "<p>GET /command?r=122&g=162&b=247 - Set cube color (0-255 RGB)</p>";
+=======
+               "<p>GET /command?color=RRGGBB - Set cube color (hex)</p>" +
+               "<p>GET /command?joyX=-1..1&joyY=-1..1 - Joystick (move cube)</p>";
+>>>>>>> 6b9df45eebffc2c5b2269db8116810ff76936781:SxL-Unity-Arduino-Template/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     }
     
     // Data endpoint - Arduino polls this
@@ -81,10 +111,27 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
         return currentChar.ToString();
     }
     
+<<<<<<< HEAD:Fast&FuriousUnity/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     // Command endpoint - Arduino or web sends commands
     // Supports: /command?cmd=c|d  OR  /command?r=255&g=0&b=0 (0-255)
+=======
+    // Command endpoint - Arduino sends commands; website can send ?color=RRGGBB (hex)
+>>>>>>> 6b9df45eebffc2c5b2269db8116810ff76936781:SxL-Unity-Arduino-Template/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     string HandleCommand(HttpListenerContext context) {
+        string colorHex = context.Request.QueryString["color"];
+        if (!string.IsNullOrEmpty(colorHex)) {
+            Color? c = ParseHexColor(colorHex);
+            if (c.HasValue) {
+                lock (queueLock) {
+                    colorQueue.Enqueue(c.Value);
+                }
+                Debug.Log($"[Server] Command: color={colorHex} - Queued color");
+                return "Cube set to " + colorHex;
+            }
+        }
+
         string cmd = context.Request.QueryString["cmd"];
+<<<<<<< HEAD:Fast&FuriousUnity/Assets/Scripts/ReadWriteCharsHTTPServer.cs
         string rStr = context.Request.QueryString["r"];
         string gStr = context.Request.QueryString["g"];
         string bStr = context.Request.QueryString["b"];
@@ -105,6 +152,8 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
         }
         
         // Legacy: single-char commands
+=======
+>>>>>>> 6b9df45eebffc2c5b2269db8116810ff76936781:SxL-Unity-Arduino-Template/Assets/Scripts/ReadWriteCharsHTTPServer.cs
         if (cmd == "c") {
             lock (queueLock) {
                 colorQueue.Enqueue(Color.red);
@@ -119,7 +168,38 @@ public class ReadWriteCharsHTTPServer : MonoBehaviour
             Debug.Log("[Server] Command: d - Queued BLUE color");
             return "Cube set to BLUE";
         }
+<<<<<<< HEAD:Fast&FuriousUnity/Assets/Scripts/ReadWriteCharsHTTPServer.cs
         
         return "Invalid command (use cmd=c|d or r,g,b query params)";
+=======
+
+        // Joystick from website: ?joyX=-0.5&joyY=0.8 (values -1 to 1)
+        string jx = context.Request.QueryString["joyX"];
+        string jy = context.Request.QueryString["joyY"];
+        if (!string.IsNullOrEmpty(jx) && !string.IsNullOrEmpty(jy) &&
+            float.TryParse(jx, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fx) &&
+            float.TryParse(jy, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fy)) {
+            fx = Mathf.Clamp(fx, -1f, 1f);
+            fy = Mathf.Clamp(fy, -1f, 1f);
+            lock (joyLock) {
+                joyX = fx;
+                joyY = fy;
+            }
+            return "joy " + fx.ToString("F2") + "," + fy.ToString("F2");
+        }
+
+        return "Invalid command";
+    }
+
+    // Parse hex string (e.g. "ff0000" or "#ff0000") to Unity Color
+    static Color? ParseHexColor(string hex) {
+        if (string.IsNullOrEmpty(hex)) return null;
+        hex = hex.TrimStart('#');
+        if (hex.Length != 6) return null;
+        if (!int.TryParse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber, null, out int r)) return null;
+        if (!int.TryParse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out int g)) return null;
+        if (!int.TryParse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out int b)) return null;
+        return new Color(r / 255f, g / 255f, b / 255f);
+>>>>>>> 6b9df45eebffc2c5b2269db8116810ff76936781:SxL-Unity-Arduino-Template/Assets/Scripts/ReadWriteCharsHTTPServer.cs
     }
 }

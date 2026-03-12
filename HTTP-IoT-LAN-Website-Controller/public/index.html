@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Game Controller</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: #1a1a2e;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #eee;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    h1 {
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+      font-weight: 600;
+      color: #a0a0ff;
+    }
+    .joystick-area {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      flex-shrink: 0;
+    }
+    .joystick-base {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #3d3d5c, #2a2a42);
+      border: 4px solid #4a4a6a;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.4), 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .joystick-stick {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      left: 50%;
+      top: 50%;
+      margin-left: -40px;
+      margin-top: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #6b6b9e, #4a4a7a);
+      border: 3px solid #5a5a8a;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+    .joystick-stick:active { cursor: grabbing; }
+    .hint {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    .color-tap {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+    .color-tap span {
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Controller</h1>
+  <div class="joystick-area" id="joystickArea">
+    <div class="joystick-base"></div>
+    <div class="joystick-stick" id="stick"></div>
+  </div>
+  <p class="hint">Drag the stick to move the cube in Unity</p>
+  <p class="color-tap"><span id="colorTap">Tap here</span> to change cube color</p>
+
+  <script>
+    const stick = document.getElementById('stick');
+    const area = document.getElementById('joystickArea');
+    const colorTap = document.getElementById('colorTap');
+
+    const RADIUS = 100;       // half of 200px base
+    const STICK_RADIUS = 40;  // half of 80px stick
+    const SEND_INTERVAL_MS = 50;  // ~20 Hz to Unity
+    let joyX = 0, joyY = 0;
+    let active = false;
+    let sendTimer = null;
+
+    function getUnityUrl() {
+      return `http://${window.location.hostname}:8080`;
+    }
+
+    function sendJoystick() {
+      const url = `${getUnityUrl()}/command?joyX=${joyX.toFixed(3)}&joyY=${joyY.toFixed(3)}`;
+      fetch(url).catch(() => {});
+    }
+
+    function startSendLoop() {
+      if (sendTimer) return;
+      sendJoystick();
+      sendTimer = setInterval(sendJoystick, SEND_INTERVAL_MS);
+    }
+
+    function stopSendLoop() {
+      if (sendTimer) {
+        clearInterval(sendTimer);
+        sendTimer = null;
+      }
+      joyX = 0;
+      joyY = 0;
+      sendJoystick(); // send zero so cube stops
+    }
+
+    function setStickPosition(clientX, clientY) {
+      const rect = area.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      let dx = clientX - cx;
+      let dy = clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > RADIUS - STICK_RADIUS) {
+        const scale = (RADIUS - STICK_RADIUS) / dist;
+        dx *= scale;
+        dy *= scale;
+      }
+      stick.style.transform = `translate(${dx}px, ${dy}px)`;
+      joyX = dx / (RADIUS - STICK_RADIUS);
+      joyY = -dy / (RADIUS - STICK_RADIUS);  // screen Y up = positive joyY = forward
+    }
+
+    function resetStick() {
+      stick.style.transform = 'translate(0, 0)';
+      joyX = 0;
+      joyY = 0;
+    }
+
+    function handleStart(e) {
+      e.preventDefault();
+      active = true;
+      startSendLoop();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      setStickPosition(clientX, clientY);
+    }
+
+    function handleMove(e) {
+      if (!active) return;
+      e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      setStickPosition(clientX, clientY);
+    }
+
+    function handleEnd(e) {
+      if (!active) return;
+      e.preventDefault();
+      active = false;
+      stopSendLoop();
+      resetStick();
+    }
+
+    stick.addEventListener('mousedown', handleStart);
+    area.addEventListener('mousedown', (e) => { if (e.target === area || e.target.classList.contains('joystick-base')) handleStart(e); });
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+
+    stick.addEventListener('touchstart', handleStart, { passive: false });
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd, { passive: false });
+    document.addEventListener('touchcancel', handleEnd, { passive: false });
+
+    // Optional: prevent body scroll on touch devices when using joystick
+    area.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+    // Color tap: random color sent to Unity (same as before)
+    function randomColor() {
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      return { r, g, b };
+    }
+    function toHex(r, g, b) {
+      return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+    function setCubeColor() {
+      const { r, g, b } = randomColor();
+      const hex = toHex(r, g, b);
+      fetch(`${getUnityUrl()}/command?color=${encodeURIComponent(hex.slice(1))}`).catch(() => {});
+    }
+    colorTap.addEventListener('click', setCubeColor);
+    colorTap.addEventListener('touchend', (e) => { e.preventDefault(); setCubeColor(); }, { passive: false });
+  </script>
+</body>
+</html>
