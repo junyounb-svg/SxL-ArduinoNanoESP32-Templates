@@ -107,8 +107,31 @@ Example: if your Wi‑Fi shows **192.168.1.105**, then:
 ### Step 4.1 – Unity and website must be running
 
 1. On the **laptop**:
-   - Unity: open your driving scene and press **Play** (HTTP server on port 4000).
-   - Terminal: in **HTTP-Smart-Controller**, keep **npm run dev** running (website on port 3000).
+
+   **Unity**
+   - Open your driving scene in Unity and press **Play**.
+   - The HTTP server will listen on port **4000** (you should see “HTTP Server listening on port 4000” in the Unity Console).
+
+   **Website (Terminal)**
+   - **Faster:** Open the **LAN Mobile Website Interface Template** folder in **Cursor** (File → Open Folder…, then choose that folder). In Cursor, open the integrated terminal (**Terminal → New Terminal**, or `` Ctrl+` `` / **Cmd+`**). The terminal starts in the project root, so you only need:
+     ```bash
+     cd "HTTP-Smart-Controller"
+     npm run dev
+     ```
+   - **Or** use the system Terminal: open **Terminal** (Spotlight → “Terminal”), then go into the project folder. If you’re already in the project root (**LAN Mobile Website Interface Template**), run:
+     ```bash
+     cd "HTTP-Smart-Controller"
+     ```
+     If Terminal opened somewhere else (e.g. your home folder), use the full path:
+     ```bash
+     cd "/Users/YourUsername/Desktop/CMU Academics/2nd Year - 2nd Sem/Lab/Exercise 6/LAN Mobile Website Interface Template/HTTP-Smart-Controller"
+     ```
+     (Replace `YourUsername` with your Mac username, or drag **HTTP-Smart-Controller** into the Terminal window to paste its path.)
+   - Start the website server:
+     ```bash
+     npm run dev
+     ```
+   - You should see **“Server running at http://localhost:3000”**. Leave the terminal open; **Ctrl+C** stops the server.
 
 ### Step 4.2 – Open the website on the iPad
 

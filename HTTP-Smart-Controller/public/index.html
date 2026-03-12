@@ -32,33 +32,49 @@
             margin-bottom: 12px;
             text-transform: uppercase;
         }
-        .steer-row {
+        /* Steering wheel container */
+        .steering-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+            touch-action: none;
+        }
+        .steering-wheel {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%);
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+            border: 12px solid #333;
+            position: relative;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: center;
+            overflow: visible;
         }
-        .steer-label { min-width: 50px; text-align: center; font-weight: bold; }
-        input[type="range"] {
-            flex: 1;
-            height: 44px;
-            -webkit-appearance: none;
-            background: transparent;
+        .steering-wheel:active { cursor: grabbing; }
+        .steering-wheel-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            transform-origin: center center;
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 44px;
-            height: 44px;
+        .steering-wheel-dot {
+            position: absolute;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: #e94560;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(233,69,96,0.5);
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #e94560;
-            cursor: pointer;
+            top: 4px;
+            left: 50%;
+            margin-left: -12px;
+            box-shadow: 0 0 12px rgba(233,69,96,0.6);
+            pointer-events: none;
         }
         .pedals {
             display: flex;
@@ -127,10 +143,12 @@
 
     <div class="section">
         <h2>Steering</h2>
-        <div class="steer-row">
-            <span class="steer-label">L</span>
-            <input type="range" id="steerSlider" min="-1" max="1" step="0.05" value="0">
-            <span class="steer-label">R</span>
+        <div class="steering-wrap">
+            <div class="steering-wheel" id="steeringWheel">
+                <div class="steering-wheel-inner" id="steeringInner">
+                    <div class="steering-wheel-dot"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -151,11 +169,11 @@
     </div>
 
     <script>
-        const UNITY_HOST_KEY = 'unityHost';
-        const PORT_KEY = 'unityPort';
+        var UNITY_HOST_KEY = 'unityHost';
+        var PORT_KEY = 'unityPort';
 
-        let unityHost = localStorage.getItem(UNITY_HOST_KEY) || window.location.hostname || 'localhost';
-        let unityPort = parseInt(localStorage.getItem(PORT_KEY) || '4000', 10);
+        var unityHost = localStorage.getItem(UNITY_HOST_KEY) || window.location.hostname || 'localhost';
+        var unityPort = parseInt(localStorage.getItem(PORT_KEY) || '4000', 10);
 
         document.getElementById('unityHost').value = unityHost;
         document.getElementById('unityPort').value = unityPort;
@@ -185,22 +203,74 @@
                 .catch(function() { showStatus('Unity not reachable', false); });
         }
 
-        document.getElementById('steerSlider').addEventListener('input', function() {
-            currentSteer = parseFloat(this.value);
+        // Steering wheel: drag left/right, max rotation ~150deg each way -> steer -1 to 1
+        var steeringEl = document.getElementById('steeringWheel');
+        var innerEl = document.getElementById('steeringInner');
+        var maxRot = 150;
+        var startX = 0, startRot = 0, currentRot = 0;
+
+        function setSteer(value) {
+            currentSteer = Math.max(-1, Math.min(1, value));
+            innerEl.style.transform = 'rotate(' + (currentSteer * maxRot) + 'deg)';
             sendToUnity();
+        }
+
+        function getCenter(el) {
+            var r = el.getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+
+        function onPointerDown(e) {
+            e.preventDefault();
+            var t = (e.touches && e.touches[0]) || e;
+            startX = t.clientX;
+            startRot = currentSteer * maxRot;
+        }
+
+        function onPointerMove(e) {
+            e.preventDefault();
+            var t = (e.touches && e.touches[0]) || e;
+            var dx = t.clientX - startX;
+            var newRot = startRot + dx * 0.8;
+            newRot = Math.max(-maxRot, Math.min(maxRot, newRot));
+            currentRot = newRot;
+            setSteer(newRot / maxRot);
+            startX = t.clientX;
+            startRot = newRot;
+        }
+
+        function onPointerUp(e) {
+            e.preventDefault();
+            document.removeEventListener('mousemove', onPointerMove);
+            document.removeEventListener('mouseup', onPointerUp);
+            document.removeEventListener('touchmove', onPointerMove, { passive: false });
+            document.removeEventListener('touchend', onPointerUp);
+            setSteer(0);
+            innerEl.style.transform = 'rotate(0deg)';
+        }
+
+        steeringEl.addEventListener('mousedown', function(e) {
+            onPointerDown(e);
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
+        });
+        steeringEl.addEventListener('touchstart', function(e) {
+            onPointerDown(e);
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
         });
 
         var gasBtn = document.getElementById('gasBtn');
         var brakeBtn = document.getElementById('brakeBtn');
-        gasBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = 1; sendToUnity(); });
+        gasBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = -1; sendToUnity(); });
         gasBtn.addEventListener('touchend', function(e) { e.preventDefault(); currentSpeed = 0; sendToUnity(); });
-        gasBtn.addEventListener('mousedown', function() { currentSpeed = 1; sendToUnity(); });
+        gasBtn.addEventListener('mousedown', function() { currentSpeed = -1; sendToUnity(); });
         gasBtn.addEventListener('mouseup', function() { currentSpeed = 0; sendToUnity(); });
         gasBtn.addEventListener('mouseleave', function() { currentSpeed = 0; sendToUnity(); });
 
-        brakeBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = -1; sendToUnity(); });
+        brakeBtn.addEventListener('touchstart', function(e) { e.preventDefault(); currentSpeed = 1; sendToUnity(); });
         brakeBtn.addEventListener('touchend', function(e) { e.preventDefault(); currentSpeed = 0; sendToUnity(); });
-        brakeBtn.addEventListener('mousedown', function() { currentSpeed = -1; sendToUnity(); });
+        brakeBtn.addEventListener('mousedown', function() { currentSpeed = 1; sendToUnity(); });
         brakeBtn.addEventListener('mouseup', function() { currentSpeed = 0; sendToUnity(); });
         brakeBtn.addEventListener('mouseleave', function() { currentSpeed = 0; sendToUnity(); });
 

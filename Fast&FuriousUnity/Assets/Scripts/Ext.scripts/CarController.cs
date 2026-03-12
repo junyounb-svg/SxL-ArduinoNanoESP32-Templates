@@ -7,7 +7,8 @@ public class CarController : MonoBehaviour {
   public float turnSpeed = 60f;
 
   void Update() {
-    transform.Translate(Vector3.forward * speed * maxSpeed * Time.deltaTime);
+    // Move along axis 90° right of forward: -transform.right so gas = forward, brake = back
+    transform.Translate(-transform.right * speed * maxSpeed * Time.deltaTime, Space.World);
     transform.Rotate(Vector3.up * steering * turnSpeed * Time.deltaTime);
   }
 }
